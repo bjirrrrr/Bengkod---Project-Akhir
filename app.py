@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import pickle
 
-# === Load model, scaler, and label encoder ===
+# === Load model & tools ===
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 
@@ -12,41 +12,35 @@ with open("scaler.pkl", "rb") as f:
 with open("label_encoder.pkl", "rb") as f:
     le = pickle.load(f)
 
-# === Daftar fitur input sesuai X.columns saat training ===
-feature_names = [
-    'Age', 'Height', 'Weight', 'FCVC', 'NCP', 'CH2O', 'FAF', 'TUE',
-    'Gender_Male', 'family_history_with_overweight_yes',
-    'SMOKE_yes', 'SCC_yes',
-    'CAEC_Sometimes', 'CAEC_Frequently', 'CAEC_Always',
-    'MTRANS_Walking', 'MTRANS_Bike', 'MTRANS_Automobile', 'MTRANS_Motorbike'
-]
+with open("features.pkl", "rb") as f:
+    full_feature_names = pickle.load(f)
 
 # === Streamlit UI ===
 st.set_page_config(page_title="Prediksi Obesitas", layout="centered")
-st.title("🌟 Prediksi Tingkat Obesitas")
+st.title("🧠 Prediksi Tingkat Obesitas")
 
-st.markdown("Masukkan data berikut untuk memprediksi tingkat obesitas:")
+st.markdown("Masukkan informasi berikut:")
 
-# === Form input ===
+# === Input User ===
 age = st.slider("Usia", 10, 100, 25)
-height = st.number_input("Tinggi (meter)", value=1.70, format="%.2f")
-weight = st.number_input("Berat (kg)", value=65.0, format="%.1f")
-fcvc = st.slider("Frekuensi konsumsi sayur (0-3)", 0.0, 3.0, 2.0)
-ncp = st.slider("Jumlah makanan utama per hari (1-4)", 1.0, 4.0, 3.0)
-ch2o = st.slider("Konsumsi air (liter/hari)", 0.0, 3.0, 2.0)
-faf = st.slider("Aktivitas fisik mingguan (jam)", 0.0, 3.0, 1.0)
+height = st.number_input("Tinggi badan (meter)", value=1.70, format="%.2f")
+weight = st.number_input("Berat badan (kg)", value=65.0, format="%.1f")
+fcvc = st.slider("Frekuensi makan sayur (0-3)", 0.0, 3.0, 2.0)
+ncp = st.slider("Jumlah makan utama/hari", 1.0, 4.0, 3.0)
+ch2o = st.slider("Konsumsi air/hari (liter)", 0.0, 3.0, 2.0)
+faf = st.slider("Aktivitas fisik (jam/minggu)", 0.0, 3.0, 1.0)
 tue = st.slider("Waktu layar (jam)", 0.0, 2.0, 1.0)
 
 gender = st.selectbox("Jenis Kelamin", ["Female", "Male"])
-family_history = st.selectbox("Riwayat keluarga obesitas", ["yes", "no"])
-smoke = st.selectbox("Apakah merokok?", ["yes", "no"])
-scc = st.selectbox("Mengikuti perawatan diet?", ["yes", "no"])
-caec = st.selectbox("Konsumsi makanan berkalori tinggi?", ["no", "Sometimes", "Frequently", "Always"])
-mtrans = st.selectbox("Transportasi", ["Public_Transportation", "Walking", "Bike", "Automobile", "Motorbike"])
+family_history = st.selectbox("Riwayat keluarga obesitas", ["no", "yes"])
+smoke = st.selectbox("Merokok?", ["no", "yes"])
+scc = st.selectbox("Ikut perawatan diet (SCC)?", ["no", "yes"])
+caec = st.selectbox("Konsumsi makanan tinggi kalori", ["no", "Sometimes", "Frequently", "Always"])
+mtrans = st.selectbox("Jenis transportasi", ["Public_Transportation", "Walking", "Bike", "Automobile", "Motorbike"])
 
-# === Prediksi tombol ===
+# === Saat tombol ditekan ===
 if st.button("🔍 Prediksi"):
-    # Dictionary input user
+    # Buat fitur input dengan one-hot encoding manual
     input_dict = {
         "Age": age, "Height": height, "Weight": weight, "FCVC": fcvc,
         "NCP": ncp, "CH2O": ch2o, "FAF": faf, "TUE": tue,
@@ -60,13 +54,13 @@ if st.button("🔍 Prediksi"):
         "MTRANS_Walking": 1 if mtrans == "Walking" else 0,
         "MTRANS_Bike": 1 if mtrans == "Bike" else 0,
         "MTRANS_Automobile": 1 if mtrans == "Automobile" else 0,
-        "MTRANS_Motorbike": 1 if mtrans == "Motorbike" else 0
+        "MTRANS_Motorbike": 1 if mtrans == "Motorbike" else 0,
     }
 
-    # Buat array input sesuai urutan feature_names
-    input_array = np.array([[input_dict.get(col, 0) for col in feature_names]])
+    # Pastikan input sesuai dengan urutan fitur saat training
+    input_array = np.array([[input_dict.get(col, 0) for col in full_feature_names]])
     input_scaled = scaler.transform(input_array)
     pred = model.predict(input_scaled)
     pred_label = le.inverse_transform(pred)[0]
 
-    st.success(f"🧠 Prediksi Tingkat Obesitas: **{pred_label}**")
+    st.success(f"🎯 Prediksi Tingkat Obesitas: **{pred_label}**")
