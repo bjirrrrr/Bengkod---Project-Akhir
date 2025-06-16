@@ -27,13 +27,16 @@ age = st.slider("Age", 10, 100, 25)
 height = st.number_input("Height (meter)", value=1.70, step=0.01)
 weight = st.number_input("Weight (kg)", value=70.0, step=0.5)
 family_history = st.selectbox("Family History with Overweight", ["yes", "no"])
+favc = st.selectbox("Do you eat high caloric food frequently? (FAVC)", ["yes", "no"])
 fcvc = st.slider("Frequency of Vegetable Consumption (FCVC)", 1.0, 3.0, 2.0)
 ncp = st.slider("Number of Meals (NCP)", 1.0, 4.0, 3.0)
 caec = st.selectbox("Consumption of food between meals (CAEC)", ["no", "Sometimes", "Frequently", "Always"])
 smoke = st.selectbox("Do you smoke?", ["yes", "no"])
 ch2o = st.slider("Water consumption (liters)", 1.0, 3.0, 2.0)
+scc = st.selectbox("Do you monitor your calorie intake? (SCC)", ["yes", "no"])
 faf = st.slider("Physical Activity (hrs/week)", 0.0, 3.0, 1.0)
 tue = st.slider("Time using technology (hrs/day)", 0.0, 2.0, 1.0)
+calc = st.selectbox("Frequency of alcohol consumption (CALC)", ["no", "Sometimes", "Frequently", "Always"])
 mtrans = st.selectbox("Transportation Used", ["Automobile", "Bike", "Motorbike", "Public_Transportation", "Walking"])
 
 # === Predict button ===
@@ -45,13 +48,16 @@ if st.button("🔍 Prediksi"):
         'Height': height,
         'Weight': weight,
         'family_history_with_overweight': family_history,
+        'FAVC': favc,
         'FCVC': fcvc,
         'NCP': ncp,
         'CAEC': caec,
         'SMOKE': smoke,
         'CH2O': ch2o,
+        'SCC': scc,
         'FAF': faf,
         'TUE': tue,
+        'CALC': calc,
         'MTRANS': mtrans
     }
 
@@ -59,7 +65,7 @@ if st.button("🔍 Prediksi"):
     input_df = pd.DataFrame([input_dict])
     input_encoded = pd.get_dummies(input_df)
 
-    # Pastikan kolom sesuai dengan training
+    # Tambah kolom yang hilang agar match dengan training
     for col in features:
         if col not in input_encoded.columns:
             input_encoded[col] = 0
