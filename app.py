@@ -18,6 +18,13 @@ st.set_page_config(page_title="Prediksi Obesitas", layout="centered")
 st.title("🧠 Prediksi Tingkat Obesitas")
 st.markdown("Masukkan informasi berikut:")
 
+# Tampilkan urutan kolom fitur dan kelas target
+st.write("📋 Urutan fitur (kolom) yang diharapkan:", features)
+st.write("🎯 Urutan kelas target (LabelEncoder):", label_encoder.classes_)
+# Jika model klasifikasi memiliki atribut classes_, tampilkan juga
+if hasattr(model, "classes_"):
+    st.write("🧮 Urutan kelas dalam model:", model.classes_)
+
 user_input = {
     'Gender': st.selectbox("Gender", ["Male", "Female"]),
     'Age': st.slider("Age", 10, 100, 25),
@@ -58,4 +65,3 @@ if st.button("🔍 Prediksi"):
     st.success(f"Hasil Prediksi: **{pred_label}**")
     st.write("📊 Kolom Input yang Dikirim ke Model:")
     st.write(df_encoded.head())
-
