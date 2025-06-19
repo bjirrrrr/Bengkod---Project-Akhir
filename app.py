@@ -18,13 +18,13 @@ st.set_page_config(page_title="Prediksi Obesitas", layout="centered")
 st.title("🧠 Prediksi Tingkat Obesitas")
 st.markdown("Masukkan informasi berikut:")
 
-# Form input user sesuai kolom asli sebelum one-hot
+# Input data
 user_input = {
-    'Gender': st.selectbox("Gender", ["Male", "Female"]),
+    'Gender': st.selectbox("Gender", ["Female", "Male"]),
     'Age': st.slider("Age", 10, 100, 25),
     'Height': st.number_input("Height (meter)", value=1.70, step=0.01),
     'Weight': st.number_input("Weight (kg)", value=70.0, step=0.1),
-    'family_history_with_overweight': st.selectbox("Family History Overweight", ["yes", "no"]),
+    'family_history_with_overweight': st.selectbox("Family History with Overweight", ["yes", "no"]),
     'FAVC': st.selectbox("Frequent high calorie food?", ["yes", "no"]),
     'FCVC': st.slider("Vegetable consumption (1-3)", 1.0, 3.0, 2.0),
     'NCP': st.slider("Number of main meals", 1.0, 4.0, 3.0),
@@ -38,30 +38,29 @@ user_input = {
     'MTRANS': st.selectbox("Transportation", ["Automobile", "Bike", "Motorbike", "Public_Transportation", "Walking"])
 }
 
-# Tombol prediksi
+# Prediction
 if st.button("🔍 Prediksi"):
-    # Buat DataFrame
-    df_input = pd.DataFrame([user_input])
+    input_df = pd.DataFrame([user_input])
+    input_encoded = pd.get_dummies(input_df)
 
-    # Encode one-hot
-    df_encoded = pd.get_dummies(df_input)
-
-    # Pastikan semua kolom fitur tersedia dan berurutan
+    # Tambahkan kolom yang hilang
     for col in features:
-        if col not in df_encoded.columns:
-            df_encoded[col] = 0
-    df_encoded = df_encoded[features]
+        if col not in input_encoded.columns:
+            input_encoded[col] = 0
 
-    # Skala input
-    input_scaled = scaler.transform(df_encoded)
+    # Pastikan urutan sesuai training
+    input_encoded = input_encoded[features]
 
-    # Prediksi
-    pred_class = model.predict(input_scaled)[0]
-    pred_label = label_encoder.inverse_transform([pred_class])[0]
+    # Scaling
+    input_scaled = scaler.transform(input_encoded)
 
-    # Tampilkan hasil
-    st.success(f"Hasil Prediksi: **{pred_label}**")
-    st.markdown("---")
-    st.markdown("📊 **Debug Info**")
-    st.write("Input vektor ke model (terurut):")
-    st.dataframe(df_encoded)
+    # Predict
+    y_pred = model.predict(input_scaled)[0]
+    label = label_encoder.inverse_transform([y_pred])[0]
+
+    st.success(f"Hasil Prediksi: **{label}**")
+
+    # Debug
+    st.subheader("📌 Kolom Input (Encoded):")
+    st.write(input_encoded)
+    st.caption(f"Shape: {input_encoded.shape} — Expected: {len(features)} features")
