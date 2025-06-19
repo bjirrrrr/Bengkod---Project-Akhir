@@ -18,7 +18,7 @@ st.set_page_config(page_title="Prediksi Obesitas", layout="centered")
 st.title("🧠 Prediksi Tingkat Obesitas")
 st.markdown("Masukkan informasi berikut:")
 
-# === Ambil input dari user sesuai raw data ===
+# === Ambil input dari user (berdasarkan fitur asli sebelum encoding) ===
 user_input = {
     'Gender': st.selectbox("Gender", ["Male", "Female"]),
     'Age': st.slider("Age", 10, 100, 25),
@@ -40,32 +40,30 @@ user_input = {
 
 # === Prediksi ketika tombol ditekan ===
 if st.button("🔍 Prediksi"):
-    # Buat DataFrame dari input user
+    # Buat DataFrame dari input
     df_input = pd.DataFrame([user_input])
 
-    # One-hot encode dengan drop_first=True agar match dengan pelatihan
+    # One-hot encoding (drop_first=True karena training juga begitu)
     df_encoded = pd.get_dummies(df_input, drop_first=True)
 
-    # Pastikan semua fitur tersedia
+    # Tambahkan kolom dummy yang hilang agar match dengan training
     for col in features:
         if col not in df_encoded.columns:
             df_encoded[col] = 0
 
-    # Urutkan kolom sesuai model
+    # Pastikan urutan kolom sesuai
     df_encoded = df_encoded[features]
 
-    # Scale
+    # Scaling input
     input_scaled = scaler.transform(df_encoded)
 
     # Prediksi
-    y_pred = model.predict(input_scaled)[0]
-    y_label = label_encoder.inverse_transform([y_pred])[0]
+    pred_class = model.predict(input_scaled)[0]
+    pred_label = label_encoder.inverse_transform([pred_class])[0]
 
-    st.success(f"Hasil Prediksi: **{y_label}**")
+    # Tampilkan hasil
+    st.success(f"Hasil Prediksi: **{pred_label}**")
 
-    # Debug info
-    st.subheader("Debug Info:")
-    st.write("Input Features:", df_encoded)
-    st.write("Scaled Input:", input_scaled)
-    st.write("Predicted Class:", y_pred)
-    st.write("Label (decoded):", y_label)
+    # Debug opsional
+    st.write("🔍 Fitur input yang dikirim ke model:")
+    st.dataframe(df_encoded)
