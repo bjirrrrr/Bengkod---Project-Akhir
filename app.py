@@ -18,9 +18,9 @@ st.set_page_config(page_title="Prediksi Obesitas", layout="centered")
 st.title("🧠 Prediksi Tingkat Obesitas")
 st.markdown("Masukkan informasi berikut:")
 
-# Input data
+# === Input Form ===
 user_input = {
-    'Gender': st.selectbox("Gender", ["Female", "Male"]),
+    'Gender': st.selectbox("Gender", ["Male", "Female"]),
     'Age': st.slider("Age", 10, 100, 25),
     'Height': st.number_input("Height (meter)", value=1.70, step=0.01),
     'Weight': st.number_input("Weight (kg)", value=70.0, step=0.1),
@@ -38,35 +38,36 @@ user_input = {
     'MTRANS': st.selectbox("Transportation", ["Automobile", "Bike", "Motorbike", "Public_Transportation", "Walking"])
 }
 
-# Prediction
+# === Predict Button ===
 if st.button("🔍 Prediksi"):
-    input_df = pd.DataFrame([user_input])
-    input_encoded = pd.get_dummies(input_df)
+    # Step 1: Convert to DataFrame
+    df_input = pd.DataFrame([user_input])
 
-    # Tambahkan kolom yang hilang
+    # Step 2: One-hot encode
+    df_encoded = pd.get_dummies(df_input)
+
+    # Step 3: Align with training features
     for col in features:
-        if col not in input_encoded.columns:
-            input_encoded[col] = 0
+        if col not in df_encoded.columns:
+            df_encoded[col] = 0
+    df_encoded = df_encoded[features]
 
-    # Pastikan urutan sesuai training
-    input_encoded = input_encoded[features]
+    # Step 4: Scaling
+    input_scaled = scaler.transform(df_encoded)
 
-    # Scaling
-    input_scaled = scaler.transform(input_encoded)
+    # Step 5: Predict
+    pred_class = model.predict(input_scaled)[0]
+    pred_label = label_encoder.inverse_transform([pred_class])[0]
 
-    # Predict
-    y_pred = model.predict(input_scaled)[0]
-    label = label_encoder.inverse_transform([y_pred])[0]
+    # === Output ===
+    st.success(f"📊 Hasil Prediksi: **{pred_label}**")
 
-    st.success(f"Hasil Prediksi: **{label}**")
-
-    # Debug
-    # Debug info
-st.subheader("🔍 DEBUG INFO")
-st.text(f"Jumlah fitur input: {input_encoded.shape[1]} (Expected: {len(features)})")
-st.text(f"Fitur yang tidak ada: {[col for col in features if col not in input_encoded.columns]}")
-st.write("Isi input encoded:")
-st.write(input_encoded)
-st.text("Kelas hasil prediksi:")
-st.text(label_encoder.classes_)
-
+    # Optional: Debug Info
+    st.markdown("### 🛠 DEBUG INFO")
+    st.write(f"Jumlah fitur input: {len(df_encoded.columns)} (Expected: {len(features)})")
+    missing = [col for col in features if col not in df_encoded.columns]
+    st.write("Fitur yang tidak ada:", missing)
+    st.write("Isi input encoded:")
+    st.dataframe(df_encoded)
+    st.write("Kelas hasil prediksi:")
+    st.write(label_encoder.classes_)
