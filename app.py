@@ -56,10 +56,6 @@ if st.button("🔍 Prediksi"):
 
     # Tampilkan hasil
     st.success(f"Hasil Prediksi: **{pred_label}**")
-    if st.button("🔎 Debug fitur"):
-    st.write("🧪 Fitur yang dikirim ke model (urutan dan isi):")
-    st.write(df_encoded.columns.tolist())
-    st.write("🔁 Harus sama dengan:")
-    st.write(features)
-    st.stop()
+    st.write("📊 Kolom Input yang Dikirim ke Model:")
+    st.write(df_encoded.head())
 
