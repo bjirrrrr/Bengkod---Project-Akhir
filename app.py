@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pickle
 
-# === Load Model Components ===
+# === Load Komponen Model ===
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 with open("scaler.pkl", "rb") as f:
@@ -13,12 +13,12 @@ with open("label_encoder.pkl", "rb") as f:
 with open("features.pkl", "rb") as f:
     features = pickle.load(f)
 
-# === Streamlit UI ===
+# === UI Streamlit ===
 st.set_page_config(page_title="Prediksi Obesitas", layout="centered")
 st.title("🧠 Prediksi Tingkat Obesitas")
 st.markdown("Masukkan informasi berikut:")
 
-# === Input Form ===
+# === Input User ===
 user_input = {
     'Gender': st.selectbox("Gender", ["Male", "Female"]),
     'Age': st.slider("Age", 10, 100, 25),
@@ -38,36 +38,31 @@ user_input = {
     'MTRANS': st.selectbox("Transportation", ["Automobile", "Bike", "Motorbike", "Public_Transportation", "Walking"])
 }
 
-# === Predict Button ===
 if st.button("🔍 Prediksi"):
-    # Step 1: Convert to DataFrame
     df_input = pd.DataFrame([user_input])
-
-    # Step 2: One-hot encode
     df_encoded = pd.get_dummies(df_input)
 
-    # Step 3: Align with training features
+    # Debug info
+    st.subheader("🔎 DEBUG INFO")
+    st.write(f"Jumlah fitur input: {len(df_encoded.columns)} (Expected: {len(features)})")
+    missing_cols = [col for col in features if col not in df_encoded.columns]
+    st.write("Fitur yang tidak ada:", missing_cols)
+
+    # Tambahkan fitur yang hilang dengan nilai 0
     for col in features:
         if col not in df_encoded.columns:
             df_encoded[col] = 0
-    df_encoded = df_encoded[features]
+    df_encoded = df_encoded[features]  # pastikan urutan sama
 
-    # Step 4: Scaling
-    input_scaled = scaler.transform(df_encoded)
-
-    # Step 5: Predict
-    pred_class = model.predict(input_scaled)[0]
-    pred_label = label_encoder.inverse_transform([pred_class])[0]
-
-    # === Output ===
-    st.success(f"📊 Hasil Prediksi: **{pred_label}**")
-
-    # Optional: Debug Info
-    st.markdown("### 🛠 DEBUG INFO")
-    st.write(f"Jumlah fitur input: {len(df_encoded.columns)} (Expected: {len(features)})")
-    missing = [col for col in features if col not in df_encoded.columns]
-    st.write("Fitur yang tidak ada:", missing)
-    st.write("Isi input encoded:")
+    st.markdown("**Isi input encoded:**")
     st.dataframe(df_encoded)
-    st.write("Kelas hasil prediksi:")
+
+    # Scaling dan Prediksi
+    input_scaled = scaler.transform(df_encoded)
+    y_pred = model.predict(input_scaled)[0]
+    label = label_encoder.inverse_transform([y_pred])[0]
+
+    # Output
+    st.success(f"🩺 Hasil Prediksi: **{label}**")
+    st.markdown("Kelas hasil prediksi:")
     st.write(label_encoder.classes_)
