@@ -61,6 +61,12 @@ if st.button("🔍 Prediksi"):
     st.success(f"Hasil Prediksi: **{label}**")
 
     # Debug
-    st.subheader("📌 Kolom Input (Encoded):")
-    st.write(input_encoded)
-    st.caption(f"Shape: {input_encoded.shape} — Expected: {len(features)} features")
+    # Debug info
+st.subheader("🔍 DEBUG INFO")
+st.text(f"Jumlah fitur input: {input_encoded.shape[1]} (Expected: {len(features)})")
+st.text(f"Fitur yang tidak ada: {[col for col in features if col not in input_encoded.columns]}")
+st.write("Isi input encoded:")
+st.write(input_encoded)
+st.text("Kelas hasil prediksi:")
+st.text(label_encoder.classes_)
+
