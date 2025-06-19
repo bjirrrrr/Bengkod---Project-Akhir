@@ -18,13 +18,13 @@ st.set_page_config(page_title="Prediksi Obesitas", layout="centered")
 st.title("🧠 Prediksi Tingkat Obesitas")
 st.markdown("Masukkan informasi berikut:")
 
-# === Ambil input dari user (berdasarkan fitur asli sebelum encoding) ===
+# Form input user sesuai kolom asli sebelum one-hot
 user_input = {
     'Gender': st.selectbox("Gender", ["Male", "Female"]),
     'Age': st.slider("Age", 10, 100, 25),
     'Height': st.number_input("Height (meter)", value=1.70, step=0.01),
     'Weight': st.number_input("Weight (kg)", value=70.0, step=0.1),
-    'family_history_with_overweight': st.selectbox("Family History with Overweight", ["yes", "no"]),
+    'family_history_with_overweight': st.selectbox("Family History Overweight", ["yes", "no"]),
     'FAVC': st.selectbox("Frequent high calorie food?", ["yes", "no"]),
     'FCVC': st.slider("Vegetable consumption (1-3)", 1.0, 3.0, 2.0),
     'NCP': st.slider("Number of main meals", 1.0, 4.0, 3.0),
@@ -38,23 +38,21 @@ user_input = {
     'MTRANS': st.selectbox("Transportation", ["Automobile", "Bike", "Motorbike", "Public_Transportation", "Walking"])
 }
 
-# === Prediksi ketika tombol ditekan ===
+# Tombol prediksi
 if st.button("🔍 Prediksi"):
-    # Buat DataFrame dari input
+    # Buat DataFrame
     df_input = pd.DataFrame([user_input])
 
-    # One-hot encoding (drop_first=True karena training juga begitu)
-    df_encoded = pd.get_dummies(df_input, drop_first=True)
+    # Encode one-hot
+    df_encoded = pd.get_dummies(df_input)
 
-    # Tambahkan kolom dummy yang hilang agar match dengan training
+    # Pastikan semua kolom fitur tersedia dan berurutan
     for col in features:
         if col not in df_encoded.columns:
             df_encoded[col] = 0
-
-    # Pastikan urutan kolom sesuai
     df_encoded = df_encoded[features]
 
-    # Scaling input
+    # Skala input
     input_scaled = scaler.transform(df_encoded)
 
     # Prediksi
@@ -63,7 +61,7 @@ if st.button("🔍 Prediksi"):
 
     # Tampilkan hasil
     st.success(f"Hasil Prediksi: **{pred_label}**")
-
-    # Debug opsional
-    st.write("🔍 Fitur input yang dikirim ke model:")
+    st.markdown("---")
+    st.markdown("📊 **Debug Info**")
+    st.write("Input vektor ke model (terurut):")
     st.dataframe(df_encoded)
