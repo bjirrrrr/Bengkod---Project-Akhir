@@ -1,67 +1,76 @@
 import streamlit as st
-import numpy as np
-import pandas as pd
 import pickle
+import pandas as pd
 
-# === Load Model Components ===
-with open("model.pkl", "rb") as f:
-    model = pickle.load(f)
-with open("scaler.pkl", "rb") as f:
-    scaler = pickle.load(f)
-with open("label_encoder.pkl", "rb") as f:
-    label_encoder = pickle.load(f)
-with open("features.pkl", "rb") as f:
-    features = pickle.load(f)
+# Fungsi untuk memuat komponen model (mem-cache agar hanya sekali load)
+@st.cache(allow_output_mutation=True)
+def load_components():
+    model = pickle.load(open('model.pkl', 'rb'))
+    scaler = pickle.load(open('scaler.pkl', 'rb'))
+    label_enc = pickle.load(open('label_encoder.pkl', 'rb'))
+    features = pickle.load(open('features.pkl', 'rb'))
+    return model, scaler, label_enc, features
 
-# === Streamlit UI ===
-st.set_page_config(page_title="Prediksi Obesitas", layout="centered")
-st.title("🧠 Prediksi Tingkat Obesitas")
-st.markdown("Masukkan informasi berikut:")
+model, scaler, label_enc, features = load_components()
 
-# Tampilkan urutan kolom fitur dan kelas target
-st.write("📋 Urutan fitur (kolom) yang diharapkan:", features)
-st.write("🎯 Urutan kelas target (LabelEncoder):", label_encoder.classes_)
-# Jika model klasifikasi memiliki atribut classes_, tampilkan juga
-if hasattr(model, "classes_"):
-    st.write("🧮 Urutan kelas dalam model:", model.classes_)
+st.title("Prediksi Kategori Obesitas")
 
-user_input = {
-    'Gender': st.selectbox("Gender", ["Male", "Female"]),
-    'Age': st.slider("Age", 10, 100, 25),
-    'Height': st.number_input("Height (meter)", value=1.70, step=0.01),
-    'Weight': st.number_input("Weight (kg)", value=70.0, step=0.1),
-    'family_history_with_overweight': st.selectbox("Family History with Overweight", ["yes", "no"]),
-    'FAVC': st.selectbox("Frequent high calorie food?", ["yes", "no"]),
-    'FCVC': st.slider("Vegetable consumption (1-3)", 1.0, 3.0, 2.0),
-    'NCP': st.slider("Number of main meals", 1.0, 4.0, 3.0),
-    'CAEC': st.selectbox("Eating between meals", ["no", "Sometimes", "Frequently", "Always"]),
-    'SMOKE': st.selectbox("Do you smoke?", ["yes", "no"]),
-    'CH2O': st.slider("Water intake (liter)", 1.0, 3.0, 2.0),
-    'SCC': st.selectbox("Calories monitor?", ["yes", "no"]),
-    'FAF': st.slider("Physical activity (hrs/week)", 0.0, 3.0, 1.0),
-    'TUE': st.slider("Time using technology (hrs/day)", 0.0, 2.0, 1.0),
-    'CALC': st.selectbox("Alcohol consumption", ["no", "Sometimes", "Frequently", "Always"]),
-    'MTRANS': st.selectbox("Transportation", ["Automobile", "Bike", "Motorbike", "Public_Transportation", "Walking"])
+# Input numerik
+age = st.number_input("Usia", min_value=0, max_value=120, value=30)
+height = st.number_input("Tinggi (meter)", min_value=0.0, max_value=3.0, value=1.7, format="%.2f")
+weight = st.number_input("Berat (kg)", min_value=0.0, max_value=500.0, value=70.0, format="%.1f")
+fcvc = st.number_input("Frekuensi makan sayuran per hari (FCVC)", min_value=0, max_value=5, value=2)
+ncp = st.number_input("Jumlah makanan per hari (NCP)", min_value=1, max_value=5, value=3)
+ch2o = st.number_input("Konsumsi air per hari (liter, CH2O)", min_value=0.0, max_value=10.0, value=2.0, format="%.1f")
+faf = st.number_input("Frekuensi aktivitas fisik per minggu (FAF)", min_value=0, max_value=7, value=1)
+tue = st.number_input("Waktu penggunaan alat elektronik per hari (jam, TUE)", min_value=0.0, max_value=24.0, value=2.0, format="%.1f")
+
+# Input kategori
+gender = st.selectbox("Gender", ["Female", "Male"])
+calc = st.selectbox("Frekuensi konsumsi fast food (CALC)", 
+                    ["Always", "Frequently", "Sometimes", "no"])
+favc = st.selectbox("Sering makan camilan (FAVC)?", ["yes", "no"])
+scc = st.selectbox("Riwayat merokok (SCC)?", ["yes", "no"])
+smoke = st.selectbox("Merokok sekarang (SMOKE)?", ["yes", "no"])
+fhwo = st.selectbox("Keluarga obesitas (yes/no)?", ["yes", "no"])
+caec = st.selectbox("Konsumsi alkohol (CAEC)", 
+                    ["Always", "Frequently", "Sometimes", "no"])
+mtrans = st.selectbox("Transportasi ke tempat kerja (MTRANS)", 
+                      ["Automobile", "Bike", "Motorbike", "Public_Transportation", "Walking"])
+
+# Susun data input menjadi DataFrame
+input_data = {
+    'Age': age,
+    'Height': height,
+    'Weight': weight,
+    'FCVC': fcvc,
+    'NCP': ncp,
+    'CH2O': ch2o,
+    'FAF': faf,
+    'TUE': tue,
+    'Gender': gender,
+    'CALC': calc,
+    'FAVC': favc,
+    'SCC': scc,
+    'SMOKE': smoke,
+    'family_history_with_overweight': fhwo,
+    'CAEC': caec,
+    'MTRANS': mtrans
 }
+input_df = pd.DataFrame([input_data])
 
-if st.button("🔍 Prediksi"):
-    df_input = pd.DataFrame([user_input])
-    df_encoded = pd.get_dummies(df_input)
+# One-hot encoding dan penyelarasan kolom
+df_encoded = pd.get_dummies(input_df)
+df_aligned = df_encoded.reindex(columns=features, fill_value=0)
 
-    # Tambahkan kolom dummy yang hilang
-    for col in features:
-        if col not in df_encoded.columns:
-            df_encoded[col] = 0
-    df_encoded = df_encoded[features]
+# Standardisasi
+X_scaled = scaler.transform(df_aligned)
 
-    # Transformasi scaling
-    input_scaled = scaler.transform(df_encoded)
+# Prediksi dan konversi label
+prediction_num = model.predict(X_scaled)
+prediction_label = label_enc.inverse_transform(prediction_num)[0]
 
-    # Prediksi
-    pred_class = model.predict(input_scaled)[0]
-    pred_label = label_encoder.inverse_transform([pred_class])[0]
-
-    # Tampilkan hasil
-    st.success(f"Hasil Prediksi: **{pred_label}**")
-    st.write("📊 Kolom Input yang Dikirim ke Model:")
-    st.write(df_encoded.head())
+# Tampilkan hasil prediksi dan fitur input yang digunakan
+st.write(f"**Prediksi kategori obesitas:** {prediction_label}")
+st.write("**Fitur input (nama kolom) yang dikirim ke model:**")
+st.write(df_aligned.columns.tolist())
